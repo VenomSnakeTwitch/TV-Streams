@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Stream Lounge</title>
+    <!-- Google Fonts für eine moderne Typografie -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0e14;
+            --card-bg: #161b22;
+            --accent-color: #e50914;
+            --text-main: #f0f6fc;
+            --text-muted: #8b949e;
+            --btn-hover: #ff1e27;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Header Bereich */
+        header {
+            width: 100%;
+            padding: 15px 20px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: var(--accent-color);
+            text-transform: uppercase;
+        }
+
+        .status-badge {
+            font-size: 11px;
+            background: rgba(46, 160, 67, 0.15);
+            color: #3fb950;
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid rgba(46, 160, 67, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #2ea44f;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        /* Hauptcontainer */
+        main {
+            width: 100%;
+            max-width: 1100px;
+            padding: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* Steuerungsbereich */
+        .controls-bar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .channel-selector {
+            display: flex;
+            gap: 8px;
+            background-color: var(--card-bg);
+            padding: 6px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .channel-btn, .epg-toggle-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 12px 18px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 46px;
+        }
+
+        .channel-btn:hover:not(:disabled), .epg-toggle-btn:hover {
+            color: var(--text-main);
+            background-color: rgba(255,255,255,0.05);
+        }
+
+        .channel-btn:disabled {
+            background-color: var(--accent-color);
+            color: #ffffff;
+            cursor: default;
+            box-shadow: 0 4px 12px rgba(229, 9, 20, 0.4);
+        }
+
+        .epg-toggle-btn {
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background-color: var(--card-bg);
+        }
+
+        /* Qualitäts-Dropdown */
+        .quality-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: var(--card-bg);
+            padding: 8px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            min-height: 46px;
+        }
+
+        .quality-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .quality-select {
+            background-color: #0b0e14;
+            color: var(--text-main);
+            border: 1px solid rgba(255,255,255,0.15);
+            padding: 8px;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .quality-select:focus {
+            border-color: var(--accent-color);
+        }
+
+        /* Player Wrapper */
+        .player-wrapper {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background-color: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+            cursor: pointer;
+        }
+
+        /* Vollbild Modi */
+        .player-wrapper:fullscreen {
+            width: 100vw;
+            height: 100vh;
+            border-radius: 0;
+            border: none;
+        }
+
+        .player-wrapper:-webkit-full-screen {
+            width: 100vw;
+            height: 100vh;
+            border-radius: 0;
+            border: none;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* Permanenter Vollbild-Button oben rechts im Player */
+        .floating-fullscreen-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(11, 14, 20, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #f0f6fc;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s ease, transform 0.1s ease;
+        }
+
+        .floating-fullscreen-btn:hover {
+            background: rgba(229, 9, 20, 0.8);
+            border-color: rgba(229, 9, 20, 0.9);
+        }
+
+        .floating-fullscreen-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Transparentes EPG Overlay */
+        .video-epg-overlay {
+            position: absolute;
+            top: 70px;
+            left: 15px;
+            right: 15px;
+            background: rgba(11, 14, 20, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 14px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 9999;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .video-epg-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .overlay-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 8px;
+        }
+
+        .overlay-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .close-overlay-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: var(--text-main);
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .overlay-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .overlay-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Reguläres EPG */
+        .epg-container {
+            width: 100%;
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .epg-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .epg-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .epg-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .epg-badge {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+
+        .badge-live {
+            background-color: rgba(229, 9, 20, 0.2);
+            color: var(--accent-color);
+            border: 1px solid rgba(229, 9, 20, 0.4);
+        }
+
+        .badge-next {
+            background-color: rgba(56, 139, 253, 0.15);
+            color: #58a6ff;
+            border: 1px solid rgba(56, 139, 253, 0.4);
+        }
+
+        .epg-time {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .epg-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 20px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">Private Stream</div>
+        <div class="status-badge">
+            <span class="status-dot"></span> Online
+        </div>
+    </header>
+
+    <main>
+        <!-- Steuerungsleiste -->
+        <div class="controls-bar">
+            <!-- Sender Auswahlschalter -->
+            <div class="channel-selector">
+                <button id="btnRtl" class="channel-btn" onclick="wechsleStream('https://s6.hopslan.com/rtltt/index.m3u8', 'btnRtl', 'btnDisney', 'rtl')">
+                    RTL
+                </button>
+                <button id="btnDisney" class="channel-btn" onclick="wechsleStream('https://s6.hopslan.com/disneyX/index.m3u8', 'btnDisney', 'btnRtl', 'disney')">
+                    Disney
+                </button>
+            </div>
+
+            <!-- EPG Toggle Button -->
+            <button class="epg-toggle-btn" onclick="toggleEPGOverlay()">
+                📺 EPG
+            </button>
+
+            <!-- Qualitätsauswahl -->
+            <div class="quality-container">
+                <label for="qualitySelect" class="quality-label">Qualität:</label>
+                <select id="qualitySelect" class="quality-select" onchange="aendereQualitaet(this.value)">
+                    <option value="-1">Auto</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Video Player Wrapper mit permanentem Vollbild-Button oben rechts -->
+        <div class="player-wrapper" id="playerWrapper" onclick="handlePlayerClick(event)">
+            
+            <!-- Permanenter Vollbild-Button oben rechts -->
+            <button class="floating-fullscreen-btn" onclick="event.stopPropagation(); toggleVollbild();" title="Vollbild umschalten">
+                ⛶ Vollbild
+            </button>
+
+            <!-- Transparentes EPG Overlay -->
+            <div class="video-epg-overlay" id="epgOverlay">
+                <div class="overlay-header">
+                    <span class="overlay-title">Programm-Information</span>
+                    <button class="close-overlay-btn" onclick="event.stopPropagation(); schliesseEPGOverlay();">✕</button>
+                </div>
+                <div class="overlay-grid">
+                    <div>
+                        <span class="epg-badge badge-live">🔴 Läuft jetzt</span>
+                        <div id="overlayCurrentTime" class="epg-time" style="margin-top: 4px;">--:-- - --:-- Uhr</div>
+                        <div id="overlayCurrentTitle" class="epg-title">Lade...</div>
+                    </div>
+                    <div>
+                        <span class="epg-badge badge-next">⏳ Als Nächstes</span>
+                        <div id="overlayNextTime" class="epg-time" style="margin-top: 4px;">--:-- - --:-- Uhr</div>
+                        <div id="overlayNextTitle" class="epg-title">Lade...</div>
+                    </div>
+                </div>
+            </div>
+
+            <video id="videoPlayer" controls autoplay playsinline></video>
+        </div>
+
+        <!-- Reguläres EPG -->
+        <div class="epg-container">
+            <div class="epg-card">
+                <div class="epg-header">
+                    <span class="epg-badge badge-live">🔴 Läuft jetzt</span>
+                    <span id="epgCurrentTime" class="epg-time">--:-- - --:-- Uhr</span>
+                </div>
+                <div id="epgCurrentTitle" class="epg-title">Lade Programm...</div>
+            </div>
+
+            <div class="epg-card">
+                <div class="epg-header">
+                    <span class="epg-badge badge-next">⏳ Als Nächstes</span>
+                    <span id="epgNextTime" class="epg-time">--:-- - --:-- Uhr</span>
+                </div>
+                <div id="epgNextTitle" class="epg-title">Lade Programm...</div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        Privates Streaming Portal
+    </footer>
+
+    <!-- HLS.js Einbindung -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+        var video = document.getElementById('videoPlayer');
+        var qualitySelect = document.getElementById('qualitySelect');
+        var epgOverlay = document.getElementById('epgOverlay');
+        var playerWrapper = document.getElementById('playerWrapper');
+        var hls = null;
+        var aktuellerSender = 'rtl';
+        var overlayTimeout = null;
+
+        const epgDaten = {
+            rtl: [
+                { start: "00:00", end: "05:00", titel: "Nachtprogramm / Magazin" },
+                { start: "05:00", end: "06:00", titel: "RTL Aktuell (Wiederholung)" },
+                { start: "06:00", end: "09:00", titel: "Guten Morgen Deutschland" },
+                { start: "09:00", end: "12:00", titel: "Punkt 12 - Das Mediencenter" },
+                { start: "12:00", end: "15:00", titel: "Scripted Reality / Mittagsmagazin" },
+                { start: "15:00", end: "18:00", titel: "Talk & Boulevard" },
+                { start: "18:00", end: "18:45", titel: "RTL Explosiv" },
+                { start: "18:45", end: "19:05", titel: "RTL Aktuell" },
+                { start: "19:05", end: "20:15", titel: "Exklusiv - Das Starmagazin" },
+                { start: "20:15", end: "23:00", titel: "Primetime / Show-Highlight" },
+                { start: "23:00", end: "23:59", titel: "RTL Nachtjournal" }
+            ],
+            disney: [
+                { start: "00:00", end: "05:30", titel: "Teleshopping & Serien-Nacht" },
+                { start: "05:30", end: "06:15", titel: "Micky Maus: Die flinken Flitzer" },
+                { start: "06:15", end: "07:15", titel: "SuperKitties & Bluey" },
+                { start: "07:15", end: "08:45", titel: "Miraculous - Geschichten von Ladybug & Cat Noir" },
+                { start: "08:45", end: "10:20", titel: "Strange World (Spielfilm)" },
+                { start: "10:20", end: "12:00", titel: "Die Monster Uni (Spielfilm)" },
+                { start: "12:00", end: "16:20", titel: "Bluey & Yuna & Stitch (Marathon)" },
+                { start: "16:20", end: "18:30", titel: "Big City Greens & Miraculous" },
+                { start: "18:30", end: "20:15", titel: "Pinocchio (Spielfilm)" },
+                { start: "20:15", end: "22:00", titel: "Die Geistervilla (Spielfilm)" },
+                { start: "22:00", end: "23:05", titel: "Muppets Haunted Mansion" },
+                { start: "23:05", end: "23:59", titel: "Hör' mal, wer da hämmert" }
+            ]
+        };
+
+        function aktualisiereEPG(sender) {
+            const plan = epgDaten[sender];
+            if (!plan) return;
+
+            const jetzt = new Date();
+            const aktuelleMinuten = jetzt.getHours() * 60 + jetzt.getMinutes();
+
+            let currentIndex = -1;
+
+            for (let i = 0; i < plan.length; i++) {
+                const [startH, startM] = plan[i].start.split(':').map(Number);
+                const [endH, endM] = plan[i].end.split(':').map(Number);
+                
+                const startMinuten = startH * 60 + startM;
+                const endMinuten = endH * 60 + endM;
+
+                if (aktuelleMinuten >= startMinuten && aktuelleMinuten < endMinuten) {
+                    currentIndex = i;
+                    break;
+                }
+            }
+
+            if (currentIndex === -1) currentIndex = 0;
+
+            const currentShow = plan[currentIndex];
+            const nextShow = plan[(currentIndex + 1) % plan.length];
+
+            document.getElementById('epgCurrentTitle').innerText = currentShow.titel;
+            document.getElementById('epgCurrentTime').innerText = `${currentShow.start} - ${currentShow.end} Uhr`;
+            document.getElementById('epgNextTitle').innerText = nextShow.titel;
+            document.getElementById('epgNextTime').innerText = `${nextShow.start} - ${nextShow.end} Uhr`;
+
+            document.getElementById('overlayCurrentTitle').innerText = currentShow.titel;
+            document.getElementById('overlayCurrentTime').innerText = `${currentShow.start} - ${currentShow.end} Uhr`;
+            document.getElementById('overlayNextTitle').innerText = nextShow.titel;
+            document.getElementById('overlayNextTime').innerText = `${nextShow.start} - ${nextShow.end} Uhr`;
+        }
+
+        function toggleVollbild() {
+            if (!document.fullscreenElement) {
+                if (playerWrapper.requestFullscreen) {
+                    playerWrapper.requestFullscreen();
+                } else if (playerWrapper.webkitRequestFullscreen) {
+                    playerWrapper.webkitRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        function toggleEPGOverlay() {
+            if (epgOverlay.classList.contains('visible')) {
+                schliesseEPGOverlay();
+            } else {
+                oeffneEPGOverlay();
+            }
+        }
+
+        function oeffneEPGOverlay() {
+            epgOverlay.classList.add('visible');
+            resetOverlayTimer();
+        }
+
+        function schliesseEPGOverlay() {
+            epgOverlay.classList.remove('visible');
+            clearTimeout(overlayTimeout);
+        }
+
+        function handlePlayerClick(event) {
+            if (event.target === video) {
+                toggleEPGOverlay();
+            }
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'e' || event.key === 'E') {
+                toggleEPGOverlay();
+            } else if (event.key === 'f' || event.key === 'F') {
+                toggleVollbild();
+            }
+        });
+
+        function resetOverlayTimer() {
+            clearTimeout(overlayTimeout);
+            if (epgOverlay.classList.contains('visible')) {
+                overlayTimeout = setTimeout(function() {
+                    schliesseEPGOverlay();
+                }, 5000);
+            }
+        }
+
+        playerWrapper.addEventListener('mousemove', function() {
+            if (epgOverlay.classList.contains('visible')) {
+                resetOverlayTimer();
+            }
+        });
+
+        function wechsleStream(streamUrl, aktivId, inaktivId, senderKey) {
+            aktuellerSender = senderKey;
+            
+            document.getElementById(aktivId).disabled = true;
+            document.getElementById(inaktivId).disabled = false;
+
+            aktualisiereEPG(senderKey);
+
+            if (hls) {
+                hls.destroy();
+            }
+
+            if (Hls.isSupported()) {
+                hls = new Hls();
+                hls.loadSource(streamUrl);
+                hls.attachMedia(video);
+                
+                hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
+                    qualitySelect.innerHTML = '<option value="-1">Auto</option>';
+
+                    data.levels.forEach(function(level, index) {
+                        var option = document.createElement('option');
+                        option.value = index;
+                        if (level.height) {
+                            option.text = level.height + 'p';
+                        } else {
+                            option.text = Math.round(level.bitrate / 1000) + ' kbps';
+                        }
+                        qualitySelect.appendChild(option);
+                    });
+
+                    video.play();
+                });
+
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = streamUrl;
+                video.addEventListener('loadedmetadata', function() {
+                    video.play();
+                });
+            }
+        }
+
+        function aendereQualitaet(levelIndex) {
+            if (hls) {
+                hls.currentLevel = parseInt(levelIndex, 10);
+            }
+        }
+
+        window.onload = function() {
+            wechsleStream('https://s6.hopslan.com/rtltt/index.m3u8', 'btnRtl', 'btnDisney', 'rtl');
+            
+            setInterval(function() {
+                aktualisiereEPG(aktuellerSender);
+            }, 60000);
+        };
+    </script>
+
+</body>
+  </html>
